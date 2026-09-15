@@ -9,15 +9,19 @@ import { attachDying } from "./dyingSocket.js";
 const app = express();
 const origins = (
   process.env.CLIENT_ORIGIN || "http://localhost:5173,http://127.0.0.1:5173"
-).split(",").map((origin) => origin.trim()).filter(Boolean);
-if (process.env.NODE_ENV === "production" && !process.env.CLIENT_ORIGIN?.trim()) {
-  throw new Error("Set CLIENT_ORIGIN to the HTTPS frontend origin before starting production");
-}
-app.use(cors({ origin: origins }));
+).split(",").map((origin) => origin.trim().replace(/\/$/, "")).filter(Boolean);
+const allowOrigin = (origin: string | undefined, callback: (error: Error | null, allowed?: boolean) => void) => {
+  if (!origin || origins.includes(origin.replace(/\/$/, "")) || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    callback(null, true);
+    return;
+  }
+  callback(new Error("Origin is not allowed"));
+};
+app.use(cors({ origin: allowOrigin }));
 app.get("/health", (_, res) => res.json({ ok: true }));
 const http = createServer(app);
 const io = new Server(http, {
-  cors: { origin: origins },
+  cors: { origin: allowOrigin },
   maxHttpBufferSize: 16384,
 });
 const gm = new GameManager();

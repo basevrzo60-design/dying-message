@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: sheriff-game-server
+    name: dying-message-server
     runtime: node
     plan: free
     buildCommand: npm ci --include=dev && npm run build:server
