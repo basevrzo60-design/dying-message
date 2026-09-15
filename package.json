@@ -1,0 +1,45 @@
+{
+  "name": "serrib",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build:server && concurrently -k \"node dist-server/server/src/index.js\" \"vite\"",
+    "build": "tsc --noEmit && vite build",
+    "build:server": "tsc -p tsconfig.server.json",
+    "start": "node dist-server/server/src/index.js",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test": "tsx --test server/src/GameManager.test.ts",
+    "test:cheese": "tsx --test server/src/CheeseManager.test.ts server/src/cheeseSocket.test.ts",
+    "test:dying": "tsc --ignoreConfig --module NodeNext --moduleResolution NodeNext --target ES2022 --esModuleInterop --skipLibCheck --types node --outDir dist-server --rootDir . server/src/dyingSocket.test.ts server/src/DyingManager.roles.test.ts && node --test dist-server/server/src/dyingSocket.test.js dist-server/server/src/DyingManager.roles.test.js",
+    "server": "npm run build:server && node dist-server/server/src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "lucide-react": "^1.43.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.3",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.5.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
+    "concurrently": "^10.0.5",
+    "oxlint": "^1.79.0",
+    "prettier": "^3.9.6",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.13",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2"
+  }
+}
