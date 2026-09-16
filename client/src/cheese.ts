@@ -8,8 +8,8 @@ function randomInt(max: number) {
   return values[0] % max;
 }
 export function deal(names: string[]): Player[] {
-  if (names.length < 4 || names.length > 8)
-    throw new Error("ต้องมีผู้เล่น 4–8 คน");
+  if (names.length < 4 || names.length > 12)
+    throw new Error("ต้องมีผู้เล่น 4–12 คน");
   const thief = randomInt(names.length);
   return names.map((name, id) => ({
     id,
