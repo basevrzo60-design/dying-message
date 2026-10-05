@@ -1,75 +1,56 @@
-# Dying Message — เบาะแสมรณะ
+# หนูชีส — Cheese Mice
 
-Dying Message สำหรับ 4–8 คน เล่นออนไลน์แยกเครื่องผ่านห้องและรหัส 6 หลัก หน้า `/create` สำหรับสร้างห้อง, `/join` สำหรับเข้าห้อง, `/room/:code` สำหรับล็อบบี้และเกม แต่ละคนเห็นเฉพาะบทบาทและเบาะแสที่เซิร์ฟเวอร์อนุญาต
+เกมออนไลน์ 4–12 คน ใช้ React/Vite และ Express/Socket.IO ผู้เล่นแต่ละคนเห็นเฉพาะบทบาท เวลาตื่น และข้อมูลลับของตัวเอง
 
-เริ่มด้วย `npm run dev` แล้วเปิด `http://localhost:5173` บนคอมพิวเตอร์ มือถือในเครือข่ายเดียวกันให้ใช้ URL `Network` ที่ Vite แสดงแทน localhost เจ้าของห้องสร้างโต๊ะแล้วส่งรหัสให้เพื่อน ทุกคนกดพร้อมก่อนเริ่ม ใช้ `npm run build` และ `npm run build:server` เพื่อสร้าง frontend และ backend; เกมออนไลน์ต้องเปิด backend ด้วย ไม่สามารถใช้ static frontend อย่างเดียว
+## เล่นในเครื่อง
 
-กติกาฉบับเว็บตาม [วิดีโอตัวอย่าง](https://www.youtube.com/watch?v=wfZlAZ86Qf0): สุ่มฆาตกร 1 คน ที่เหลือเป็นผู้บริสุทธิ์ ฆาตกรเลือกเหยื่อ เหยื่อเห็นตัวฆาตกรและเลือกภาพเบาะแสจริงจากกองกลาง 9 ใบ ฆาตกรเลือกภาพลวงเพิ่ม ทุกคนเห็นภาพทั้งหมดปนกันโดยไม่แยกใบจริง/ปลอม ผู้รอดชีวิตพูดคุยและโหวตลับหนึ่งคนหนึ่งเสียง เหยื่อและคนที่ถูกโหวตออกไม่มีสิทธิ์โหวตหรือพูด หากฆาตกรได้คะแนนสูงสุดเพียงคนเดียว ผู้บริสุทธิ์ชนะ มิฉะนั้นเล่นรอบถัดไปจนผู้บริสุทธิ์หมด แล้วฆาตกรชนะ คะแนนสูงสุดเสมอกันจะไม่มีใครถูกคัดออก ภาพในเว็บเป็นชุดไอคอนต้นฉบับ ไม่ใช่ภาพไพ่จากเกมจริง
+```bash
+npm ci
+npm run dev
+```
 
-ระบบจัดชุดตัวละครอัตโนมัติตามจำนวนผู้เล่น: 4 คนมีฆาตกร นักสืบเอกชน และพลเมือง; คนที่ 5 เพิ่มผู้มีชื่อเสียง (เมื่อตายลดเบาะแสลวง); คนที่ 6 เพิ่มขุนนาง (เมื่อตายให้เบาะแสจริง 2 ใบ); คนที่ 7 เพิ่มสุนัขเฝ้ายาม (ปกป้องผู้เล่นอื่นก่อนการฆ่า); และ 8 คนเปลี่ยนฆาตกรเป็นฆาตกรมืออาชีพซึ่งวางเบาะแสลวง 3 ใบ ทุกความสามารถถูกตรวจและดำเนินลำดับโดยเซิร์ฟเวอร์ ข้อมูลของนักสืบและผู้ที่ได้รับการปกป้องเป็นข้อมูลลับเฉพาะผู้มีสิทธิ์
+เปิด `http://localhost:5173` หรือใช้ IP ของเครื่องในเครือข่ายเดียวกันบนมือถือ เซิร์ฟเวอร์ใช้พอร์ต 3000 หน้าเว็บ development ส่ง Socket.IO ผ่าน Vite proxy
 
-เซิร์ฟเวอร์เก็บสถานะและตรวจสิทธิ์ทุกคำสั่ง ส่งเฉพาะข้อมูลส่วนตัวของเจ้าของที่นั่ง ไม่ส่งบทบาทฆาตกรหรือคำตอบของเบาะแสให้คนอื่น ตัวตนใช้โทเคนสุ่มใน sessionStorage แยกตามแท็บ รีเฟรชแท็บเดิมแล้วกลับที่นั่งได้ ระหว่างเกมจะหยุดรอผู้ที่หลุด; ถ้าเจ้าของห้องหลุดจะย้ายสิทธิ์เจ้าของให้ผู้ที่ยังออนไลน์ ห้องอยู่ในหน่วยความจำและหายเมื่อปิด backend ห้องไม่มีคนเชื่อมต่อนานหนึ่งชั่วโมงจะถูกล้าง ใช้ HTTPS เมื่อเผยแพร่จริง
+```bash
+npm run build
+npm start
+```
 
-ใช้ Express/Socket.IO และไฟล์ตั้งค่าเดิม โดยแยกเกมใหม่ใน namespace `/dying` และ `DyingManager` ตัวจัดการเกม Cheese Thief และ Sheriff ยังเก็บไว้เพื่อไม่ลบระบบเดิม แต่หน้าเว็บใหม่ไม่โหลดส่วนเกมเก่า
-
-ตรวจเกมใหม่ด้วย `npm run test:dying` ครอบคลุมสิทธิ์ข้อมูลลับ เบาะแสจริง/ลวง ผลโหวต การคืนที่นั่ง และผู้เล่น Socket.IO จริงสี่คน ส่วน `npm test` และ `npm run test:cheese` ยังทดสอบระบบเดิมที่เก็บไว้
-
----
-
-## เอกสารระบบเดิมที่เก็บไว้ (Sheriff — ไม่ใช่วิธีเล่นหน้าเว็บปัจจุบัน)
+หลัง build เซิร์ฟเวอร์ให้บริการหน้าเว็บด้วยที่ `http://localhost:3000`
 
 ## เล่นบนมือถือ
 
-รัน `npm run dev` บนคอมพิวเตอร์ แล้วเชื่อมมือถือกับ Wi-Fi เดียวกัน เปิด URL ที่ขึ้นว่า `Network` ในหน้าต่างเซิร์ฟเวอร์ (ไม่ใช้ `localhost` บนมือถือ) ให้คอมพิวเตอร์และเซิร์ฟเวอร์เปิดอยู่ระหว่างเล่น ที่อยู่ Network อาจเปลี่ยนเมื่อย้ายเครือข่าย ลิงก์นี้ใช้ภายในเครือข่ายเดียวกัน ยังไม่ใช่เว็บไซต์สาธารณะ
+1. เปิดเซิร์ฟเวอร์บนคอมพิวเตอร์ด้วย `npm run build` แล้ว `npm start`
+2. ให้มือถือกับคอมพิวเตอร์อยู่ในเครือข่ายเดียวกัน แล้วเปิด `http://IP-ของคอมพิวเตอร์:3000` ใน Safari หรือ Chrome บนมือถือ (อย่าใช้ `localhost` บนมือถือ)
+3. สร้างห้องหรือกรอกรหัสห้องเพื่อเล่น ผู้เล่นแต่ละคนใช้เบราว์เซอร์ของตัวเอง
 
-เมนูล่างสลับกระดาน ผู้เล่น ไพ่ในมือ และแชตได้ ในแผงไพ่สามารถเลือกทิ้งและกดจั่ว จากนั้นเลือกสินค้าและกดปิดถุงได้ทันที ปุ่มยืนยันติดด้านล่างของแผง พร้อมพื้นที่สำหรับขอบล่างหน้าจอ ช่องกรอกบนมือถือใช้ตัวอักษร 16px และรองรับการคัดลอกรหัสด้วยการเลือกข้อความเมื่อ Clipboard API ใช้ไม่ได้บน HTTP
+หน้าเกมรองรับจอแคบ 320px ขึ้นไป มีปุ่มขนาดอย่างน้อย 44px ช่องกรอกขนาดตัวอักษร 16px และปุ่มลัดเมนูเจ้าของห้องในโหมด 2 กดค้างที่รหัสห้องเพื่อคัดลอกได้เมื่อเบราว์เซอร์ไม่อนุญาต Clipboard ผ่าน HTTP
 
-## อัปเดตภาษาไทยและระบบจั่วการ์ด
+ถ้าเปิดผ่าน IP ไม่ได้ ให้ตรวจว่าพอร์ต 3000 ได้รับอนุญาตในไฟร์วอลล์ของเครื่องและเครือข่ายไม่ได้แยกอุปกรณ์ออกจากกัน สำหรับเล่นคนละเครือข่าย ให้เปิดจาก URL ของบริการที่ deploy ตาม [DEPLOYMENT.md](DEPLOYMENT.md) แทน IP ภายในบ้าน
 
-หน้าจอ กติกา ชื่อสินค้า เหตุการณ์ และข้อความแจ้งเตือนเป็นภาษาไทย มีสินค้า 12 ชนิด รวม 216 ใบ (ถูกกฎหมาย 6 ชนิด / ต้องห้าม 6 ชนิด) เพิ่มปลา น้ำผึ้ง ชาลักลอบ และอัญมณี
+## กติกาและโหมด
 
-เริ่มเกมด้วยไพ่ 8 ใบ ก่อนจัดถุงในแต่ละเทิร์นสามารถเลือกทิ้ง 0–3 ใบ แล้วกดจั่วเติมให้ครบ 8 ใบได้ครั้งเดียว ถ้าไม่ทิ้งและมีครบแล้ว กดเก็บไพ่เดิมเพื่อไปต่อ เซิร์ฟเวอร์ตรวจสิทธิ์และจำนวนการ์ด กองทิ้งจะถูกสับกลับเมื่อกองจั่วหมด โดยยังไม่รวมการ์ดที่เพิ่งทิ้งในคำสั่งเดียวกัน ผู้เล่นอื่นเห็นเฉพาะจำนวนในกอง ไม่เห็นหน้าไพ่หรือลำดับการ์ด
+- โหมด 1: เลือกการ์ดคว่ำ คนละ 1 ใบ มีหนูโจร 1 ใบ เจ้าของห้องตั้งเวลาหรือปิดเวลาได้ใน lobby ตัวจับเวลาครอบคลุมแต่ละชั่วโมงกลางคืนและการประชุม เมื่อปิดเวลา ชั่วโมงเปลี่ยนเมื่อผู้ที่ตื่นทำเสร็จ และประชุมรอเจ้าของห้องเปิดโหวต
+- โหมด 2: สุ่มบทบาทให้ทันที ทุกคนดูบทบาทแล้วกดพร้อม จากนั้นทอยเวลาตื่น เจ้าของห้องใช้เมนูไปขั้นตอนถัดไป ไม่มีตัวจับเวลา ขั้นเลือกบทบาท/ทอยเวลาต้องรอทุกคนเสร็จ ส่วนกลางคืนเจ้าของห้องข้ามชั่วโมงได้
+- ทุกคนทอยเวลาตื่น 1–6 เล่นกลางคืนตั้งแต่ตี 1 ถึง 6 โมงเช้า ตื่นคนเดียวดูเวลาคนอื่นได้ 1 คน ตื่นหลายคนเห็นผู้ที่ตื่นพร้อมกัน หนูโจรเลือกขโมยชีสกลางโต๊ะได้เมื่อถึงเวลาตัวเอง
+- หลัง 6 โมง หนูโจรเลือกหนูธรรมดา 2 คนเป็นลูกสมุน แล้วเริ่มประชุม ทุกบทบาทลงคะแนนได้คนละ 1 เสียง ผู้ที่ได้คะแนนสูงสุดถูกจับ หากเป็นหนูโจร หนูธรรมดาชนะ หากเป็นคนอื่นหรือคะแนนเสมอ ฝ่ายโจรชนะ
+- บอททำขั้นตอนส่วนตัวอัตโนมัติและโหวตแบบสุ่ม เพิ่มบอทใน lobby ได้ หากเตะระหว่างเกม ที่นั่งนั้นจะกลายเป็นบอทโดยคงบทบาทและเวลาตื่นไว้
 
-ข้อมูลสินค้าและกติกาการจั่วใช้ร่วมกันจาก `shared/goods.ts` เพื่อให้หน้าจอและเซิร์ฟเวอร์ตรงกัน
+## การกลับเข้าห้อง
 
-React + TypeScript + Vite + Tailwind, with an authoritative Express / Socket.IO server. All room state is in memory; restarting the server clears rooms. No database is required.
+บันทึกโทเคนที่นั่งใน localStorage ของเบราว์เซอร์เดิม เปิดหน้าใหม่หรือเครือข่ายกลับมาจะคืนที่นั่งอัตโนมัติ ระหว่างคนหลุด เกมหยุดและเก็บเวลาที่เหลือ เจ้าของห้องสามารถแทนที่คนนั้นด้วยบอทได้ โทเคนเดิมจะใช้ไม่ได้เมื่อถูกเตะ/แทนที่
 
-## Run
+ห้องอยู่ในหน่วยความจำและหายเมื่อเซิร์ฟเวอร์รีสตาร์ต ห้องที่ไม่มีผู้เล่นออนไลน์เกิน 24 ชั่วโมงจะถูกปิด ไม่รองรับการคืนที่นั่งจากเบราว์เซอร์หรืออุปกรณ์อื่น
 
-From this folder: `npm install`, then `npm run dev`. Open http://localhost:5173. The game server runs at http://localhost:3000.
+## ตรวจสอบ
 
-Alternatively, use two terminals as requested:
-
-```sh
-cd client
-npm install
-npm run dev
+```bash
+npm test
+npm run lint
 ```
 
-```sh
-cd server
-npm install
-npm run dev
-```
+Socket.IO namespace คือ `/cheese` และ health check คือ `/health` ตั้ง `CLIENT_ORIGIN` เป็นรายการ origin ที่อนุญาตคั่นด้วยจุลภาค หากไม่ตั้งจะอนุญาต origin ทุกแห่งสำหรับการเล่นในเครื่อง ดู [.env.example](.env.example) และ [DEPLOYMENT.md](DEPLOYMENT.md)
 
-Create a room, then join its code from other browser windows with different names. All players must mark Ready. The host starts with 3–6 players. Practice mode creates three server-controlled merchants and is disabled when NODE_ENV=production.
+## GitHub / Vercel / Render
 
-`npm run build` checks TypeScript and builds the frontend. `npm test` verifies game rules and privacy. With the server running, `node server/src/multiplayer.test.mjs` checks three real socket connections.
-
-## Rules and sessions
-
-Each player is Sheriff once, with every other player taking a merchant turn. Declare one legal good and the exact bag count. Inspection confiscates every undeclared good, including undeclared legal goods. Honest merchants receive compensation. Payments are capped at available coins. Each legal-goods majority earns 10 points, divided between ties and rounded down; final-score ties share victory.
-
-Session credentials use a random secret in addition to the player ID. Per-tab session storage isolates players across tabs; local storage provides refresh/reopen recovery. Hands, bag contents, credentials, deck and private room passwords are excluded from other players’ snapshots. Server timers advance turns; clients cannot advance rounds themselves. If an active player disconnects, the table waits for their return. Empty inactive rooms expire after one hour.
-
-## Deployment and extension
-
-ขั้นตอนนำขึ้น Vercel + Render แบบละเอียดอยู่ใน [DEPLOYMENT.md](./DEPLOYMENT.md) พร้อมไฟล์ตั้งค่าโฮสต์และคำสั่ง `npm run build:server` / `npm start` สำหรับเซิร์ฟเวอร์ production
-
-Set CLIENT_ORIGIN to comma-separated permitted browser origins. Set PORT for the server and VITE_SERVER_URL when the frontend connects directly instead of using the Vite proxy. Production hosting needs a long-running Node process with WebSocket support and a reverse proxy for `/socket.io`; a static frontend alone cannot host this multiplayer backend. Use HTTPS in production.
-
-The GameManager owns the rules and in-memory room collection. A database-backed repository can replace the room collection for PostgreSQL/MySQL persistence. This version is designed for a single server process; horizontal scaling also needs shared room storage and a Socket.IO adapter.
-
-The market illustration was generated for this project. Google Fonts are optional; local serif/sans-serif fallbacks are provided.
-
----
+Vercel ใช้ `npm run build:client` สำหรับหน้าเกม ส่วน Render ใช้ `npm run build:server` และ `npm start` สำหรับ Socket.IO ตั้ง `VITE_SERVER_URL` บน Vercel ให้ชี้ backend และ `CLIENT_ORIGIN` บน Render ให้ตรงหน้าเกม ดู [DEPLOYMENT.md](DEPLOYMENT.md) สำหรับ URL และค่าของโปรเจกต์เดิม

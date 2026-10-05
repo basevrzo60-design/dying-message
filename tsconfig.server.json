@@ -8,6 +8,5 @@
     "outDir": "dist-server",
     "types": ["node"]
   },
-  "include": ["server/src/**/*.ts", "shared/**/*.ts"],
-  "exclude": ["server/src/**/*.test.ts"]
+  "include": ["server/src", "shared"]
 }

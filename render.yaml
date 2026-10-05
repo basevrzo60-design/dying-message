@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: dying-message-server
+    name: serrib-server
     runtime: node
     plan: free
     buildCommand: npm ci --include=dev && npm run build:server
