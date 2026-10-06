@@ -67,16 +67,6 @@ export function attachCheese(io: Server) {
         gm.rooms.delete(room.code);
         continue;
       }
-      if (
-        room.phase === "night" &&
-        room.auto &&
-        room.deadline &&
-        room.deadline <= Date.now() &&
-        !gm.paused(room)
-      ) {
-        gm.advance(room);
-        publish(room);
-      }
     }
   }, 500);
   timer.unref();

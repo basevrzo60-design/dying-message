@@ -44,7 +44,10 @@ export type CheeseView = {
     players: { id: string; role: CheeseRole; hour: number; votes: number }[];
   };
 };
-export const henchmenFor = (count: number) => (count <= 5 ? 1 : 2);
+// Keep the thieves' team close to one third of the table without making
+// smaller games overwhelming: 4–6 players get one henchman, 7–8 get two.
+export const henchmenFor = (count: number) =>
+  Math.max(1, Math.floor((count - 1) / 3));
 export const hourLabel = (hour: number) =>
   hour === 6 ? "6 โมงเช้า" : `ตี ${hour}`;
 export const roleLabel = (role: CheeseRole | null) =>
