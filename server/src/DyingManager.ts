@@ -17,49 +17,10 @@ export class DyingManager {
   credentials(room:Room,p:Player) { return {code:room.code,id:p.id,token:p.token}; }
   create(socketId:string,data:Record<string,unknown>) { this.free(socketId);const name=this.text(data.playerName,24),roomName=this.text(data.roomName,40);if(!Number.isInteger(data.capacity)||Number(data.capacity)<4||Number(data.capacity)>8)throw Error('ห้องรองรับ 4–8 คน');let code:string;do{code=String(randomInt(100000,1000000));}while(this.rooms.has(code));const player=this.player(socketId,name);const room:Room={code,name:roomName,capacity:Number(data.capacity),hostId:player.id,players:[player],phase:'lobby',round:0,victimId:null,protectedId:null,choices:[],realIds:[],fakeIds:[],summary:null,winner:null,lastActive:Date.now()};this.rooms.set(code,room);return{room,player}; }
   join(socketId:string,data:Record<string,unknown>) { this.free(socketId);const room=this.rooms.get(this.text(data.code,6));if(!room)throw Error('ไม่พบห้อง');if(room.phase!=='lobby')throw Error('เกมเริ่มแล้ว');if(room.players.length>=room.capacity)throw Error('ห้องเต็มแล้ว');const name=this.text(data.playerName,24);if(room.players.some(p=>p.name.toLocaleLowerCase()===name.toLocaleLowerCase()))throw Error('ชื่อนี้มีคนใช้แล้ว');const player=this.player(socketId,name);room.players.push(player);room.lastActive=Date.now();return{room,player}; }
-  rejoin(socketId:string,data:Record<string,unknown>) { this.free(socketId);const room=this.rooms.get(String(data.code)),player=room?.players.find(p=>p.id===data.id);if(!room||!player||player.departed||typeof data.token!=='string'||Buffer.byteLength(data.token)!==Buffer.byteLength(player.token)||!timingSafeEqual(Buffer.from(data.token),Buffer.from(player.token)))throw Error('คืนที่นั่งไม่ได้');if(player.socketId)throw Error('ที่นั่งนี้เปิดอยู่ในเครื่องอื่น');player.socketId=socketId;if(!room.players.some(p=>p.id===room.hostId&&p.socketId&&!p.departed))room.hostId=player.id;room.lastActive=Date.now();return{room,player}; }
-  paused(room:Room) { return room.phase!=='lobby'&&room.phase!=='result'&&room.players.some(p=>!p.socketId&&!p.departed&&(p.alive||room.phase==='real_clue'&&p.id===room.victimId)); }
-  disconnect(socketId:string) { let found;try{found=this.auth(socketId);}catch{return null;}const{room,player}=found;player.socketId=null;if(room.hostId===player.id)room.hostId=room.players.find(p=>p.socketId&&!p.departed)?.id??player.id;room.lastActive=Date.now();return room; }
-  leave(socketId:string) {
-    const{room,player}=this.auth(socketId);
-    if(room.phase==='lobby') {
-      room.players=room.players.filter(p=>p!==player);
-    } else {
-      const wasKiller=roleInfo[player.role].team==='murderer';
-      player.socketId=null;
-      player.departed=true;
-      player.alive=false;
-      player.token=randomUUID();
-      this.advanceAfterDeparture(room,player,wasKiller);
-    }
-    if(room.hostId===player.id)room.hostId=room.players.find(p=>p.socketId&&!p.departed)?.id??room.players.find(p=>!p.departed)?.id??'';
-    room.lastActive=Date.now();
-    if(!room.players.length||room.players.every(p=>p.departed))this.rooms.delete(room.code);
-    return room;
-  }
-  private advanceAfterDeparture(room:Room,player:Player,wasKiller:boolean) {
-    const active=()=>room.players.filter(p=>!p.departed);
-    const livingInnocents=()=>active().some(p=>p.alive&&roleInfo[p.role].team==='innocents');
-    if(room.phase==='result')return;
-    if(room.phase==='reveal') {
-      if(active().length<4) {
-        room.phase='lobby';
-        room.round=0;
-        room.players=active();
-        room.players.forEach(p=>{p.ready=false;p.confirmed=false;p.alive=true;p.vote=null;p.role='innocent';});
-      } else if(active().every(p=>p.confirmed)) this.startRound(room);
-      return;
-    }
-    if(wasKiller) { room.winner='innocents';room.phase='result';return; }
-    if(!livingInnocents()) { room.winner='murderer';room.phase='result';return; }
-    if(room.phase==='guard'&&player.role==='guard')room.phase='kill';
-    if(room.phase==='real_clue'&&player.id===room.victimId) {
-      room.realIds=room.choices.slice(0,this.realCount(room)).map(card=>card.id);
-      room.phase=active().some(p=>p.role==='detective'&&p.alive)?'detective':'fake_clues';
-    }
-    if(room.phase==='detective'&&player.role==='detective')room.phase='fake_clues';
-    if(room.phase==='vote'&&active().filter(p=>p.alive).every(p=>p.vote!==null))this.finishVote(room);
-  }
+  rejoin(socketId:string,data:Record<string,unknown>) { this.free(socketId);const room=this.rooms.get(String(data.code)),player=room?.players.find(p=>p.id===data.id);if(!room||!player||typeof data.token!=='string'||Buffer.byteLength(data.token)!==Buffer.byteLength(player.token)||!timingSafeEqual(Buffer.from(data.token),Buffer.from(player.token)))throw Error('คืนที่นั่งไม่ได้');if(player.socketId)throw Error('ที่นั่งนี้เปิดอยู่ในเครื่องอื่น');player.socketId=socketId;if(!room.players.some(p=>p.id===room.hostId&&p.socketId))room.hostId=player.id;room.lastActive=Date.now();return{room,player}; }
+  paused(room:Room) { return room.phase!=='lobby'&&room.phase!=='result'&&room.players.some(p=>!p.socketId&&(p.alive||room.phase==='real_clue'&&p.id===room.victimId)); }
+  disconnect(socketId:string) { let found;try{found=this.auth(socketId);}catch{return null;}const{room,player}=found;player.socketId=null;if(room.hostId===player.id)room.hostId=room.players.find(p=>p.socketId)?.id??player.id;room.lastActive=Date.now();return room; }
+  leave(socketId:string) { const{room,player}=this.auth(socketId);if(!['lobby','result'].includes(room.phase))throw Error('ระหว่างเกมต้องรอจนจบรอบก่อนออกจากห้อง');if(room.phase==='result'){player.socketId=null;player.departed=true;player.token=randomUUID();}else room.players=room.players.filter(p=>p!==player);if(room.hostId===player.id)room.hostId=room.players.find(p=>p.socketId)?.id??room.players[0]?.id??'';if(!room.players.length||room.players.every(p=>p.departed))this.rooms.delete(room.code);return room; }
   private choices() { const pool=[...evidence];for(let i=pool.length-1;i>0;i--){const j=this.rng(i+1);[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,9); }
   private startRound(room:Room) { room.round++;room.victimId=null;room.protectedId=null;room.choices=this.choices();room.realIds=[];room.fakeIds=[];room.summary=null;room.players.forEach(p=>p.vote=null);room.phase=room.players.some(p=>p.role==='guard'&&p.alive)?'guard':'kill'; }
   private finishVote(room:Room) { const alive=room.players.filter(p=>p.alive),counts=alive.map(p=>({id:p.id,count:alive.filter(q=>q.vote===p.id).length})),max=Math.max(...counts.map(x=>x.count)),leaders=counts.filter(x=>x.count===max),accusedId=leaders.length===1?leaders[0].id:null,caught=accusedId===this.killer(room).id;room.summary={accusedId,tied:!accusedId,counts,caught};if(accusedId)room.players.find(p=>p.id===accusedId)!.alive=false;if(caught){room.winner='innocents';room.phase='result';}else if(!room.players.some(p=>p.alive&&roleInfo[p.role].team==='innocents')){room.winner='murderer';room.phase='result';}else room.phase='round_end'; }

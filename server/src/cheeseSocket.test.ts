@@ -20,15 +20,9 @@ test('four real socket clients play a private complete game and reconnect',{time
   const leader=views.findIndex(v=>v?.me.role==='leader');assert.ok(leader>=0);for(const view of views){assert.equal(view!.result,null);assert.ok(view!.players.every(p=>!('role'in p)&&!('hour'in p)&&!('token'in p)));}
   for(let i=0;i<4;i++)await action(i,'confirm');await until(()=>views.every(v=>v?.phase==='night'));
   const room=gm.rooms.get(code)!;
-  assert.equal((await action(0,'auto')).ok,false);
-  for(let step=0;step<6&&views[0]?.phase==='night';step++) {
-   const hour=views[0]!.hour;
-   const awake=views.map((v,i)=>({v:v!,i})).filter(({v})=>v.me.hour===hour);
-   assert.ok(awake.length>0);
-   for(const {v,i} of awake){if(v.me.canPeek){assert.equal((await action(i,'peek',{targetId:v.players.find(p=>p.id!==v.me.id)!.id})).ok,true);}assert.equal((await action(i,'night_done')).ok,true);}
-   await until(()=>views.every(v=>v?.phase!=='night'||v.hour!==hour));
-  }
-  await until(()=>views.every(v=>v?.phase==='recruit'));
+  // Force a server deadline to verify timer broadcasts without a three-minute test.
+  await action(0,'auto');room.deadline=Date.now()-1;await until(()=>views.every(v=>v?.hour===2));await action(0,'auto');
+  for(let h=2;h<=6;h++) {for(let i=0;i<4;i++)if(views[i]!.me.hour===h){const v=views[i]!;if(v.me.canPeek){assert.equal((await action(i,'peek',{targetId:v.players.find(p=>p.id!==v.me.id)!.id})).ok,true);}await action(i,'night_done');}assert.equal((await action(0,'next')).ok,true);await until(()=>views.every(v=>h===6?v?.phase==='recruit':v?.hour===h+1));}
   const helper=views[leader]!.players.find(p=>p.id!==views[leader]!.me.id)!.id;
   assert.equal((await action((leader+1)%4,'recruit',{ids:[helper]})).ok,false);await action(leader,'recruit',{ids:[helper]});await until(()=>views.every(v=>v?.phase==='morning'));
   await action(0,'open_vote');await until(()=>views.every(v=>v?.phase==='vote'));

@@ -183,12 +183,8 @@ export class CheeseManager {
     return room;
   }
   private enterHour(room: CheeseRoom) {
-    room.deadline = null;
+    room.deadline = room.auto ? Date.now() + 30000 : null;
     const awake = room.players.filter((p) => p.hour === room.hour);
-    if (!awake.length) {
-      this.advance(room);
-      return;
-    }
     for (const p of room.players) {
       p.nightDone = false;
       if (p.hour === room.hour)
@@ -275,22 +271,20 @@ export class CheeseManager {
       case "night_done":
         phase("night");
         if (p.hour !== room.hour) throw Error("ยังไม่ใช่เวลาตื่นของคุณ");
-        if (p.nightDone) throw Error("คุณกดพร้อมแล้ว");
         p.nightDone = true;
-        if (
-          room.players
-            .filter((q) => q.hour === room.hour)
-            .every((q) => q.nightDone)
-        )
-          this.advance(room);
         break;
       case "next":
+        host();
         phase("night");
-        throw Error("รอผู้ที่ตื่นทุกคนกดพร้อม ระบบจะเลื่อนเวลาให้เอง");
+        if (room.players.some((q) => q.hour === room.hour && !q.nightDone))
+          throw Error("รอผู้ที่ตื่นกดเสร็จแล้ว หรือใช้อัตโนมัติ 30 วินาที");
+        this.advance(room);
         break;
       case "auto":
+        host();
         phase("night");
-        throw Error("โหมดนี้รอผู้ที่ตื่นทุกคนกดพร้อม");
+        room.auto = !room.auto;
+        room.deadline = room.auto ? Date.now() + 30000 : null;
         break;
       case "recruit": {
         phase("recruit");

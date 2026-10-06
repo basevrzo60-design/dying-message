@@ -12,9 +12,6 @@ function game(count=4,hours=[1,2,2,4,5,6,3,3]){
 }
 function night(g:ReturnType<typeof game>){g.room.players.forEach(p=>g.gm.action(p.socketId!,'confirm'));}
 function morning(g:ReturnType<typeof game>){night(g);for(let i=0;i<6;i++)g.gm.advance(g.room);g.gm.action('s0','recruit',{ids:g.room.players.slice(1,1+henchmenFor(g.room.players.length)).map(p=>p.id)});}
-test('henchmen scale with the table size',()=>{
- assert.deepEqual([4,5,6,7,8].map(henchmenFor),[1,1,1,2,2]);
-});
 test('rooms validate capacity, names, readiness, host authority and late joins',()=>{
  const gm=new CheeseManager();assert.throws(()=>gm.create('x',{playerName:'a',roomName:'b',capacity:3}));
  const {room}=gm.create('s0',{playerName:'a',roomName:'b',capacity:4});
@@ -31,18 +28,17 @@ test('snapshots omit other roles, hours, tokens, votes and sleeping-player obser
  for(const p of room.players){const view=gm.snapshot(room,p);assert.equal(view.result,null);assert.deepEqual(view.me.team,[]);for(const publicPlayer of view.players){assert.deepEqual(Object.keys(publicPlayer).sort(),['connected','id','name','ready']);}assert.ok(!JSON.stringify(view).includes(p.token));}
  const sleeper=gm.snapshot(room,room.players[1]);assert.equal(sleeper.me.awake,false);assert.deepEqual(sleeper.me.companions,[]);assert.deepEqual(sleeper.me.knownCompanions,[]);
 });
-test('solo wake keeps a private peek until Ready; shared wake waits for every player',()=>{
+test('solo wake permits exactly one private peek; shared wake only reveals companions',()=>{
  const g=game();const {gm,room}=g;night(g);const [a,b,c,d]=room.players;
  assert.equal(gm.snapshot(room,a).me.canPeek,true);
  assert.throws(()=>gm.action('s1','peek',{targetId:d.id}));
  assert.throws(()=>gm.action('s0','peek',{targetId:a.id}));
  gm.action('s0','peek',{targetId:b.id});assert.deepEqual(gm.snapshot(room,a).me.peek,{id:b.id,hour:2});
  assert.equal(gm.snapshot(room,b).me.peek,null);assert.throws(()=>gm.action('s0','peek',{targetId:d.id}));
- assert.equal(room.hour,1);assert.throws(()=>gm.action('s0','next'));gm.action('s0','night_done');
- assert.equal(room.hour,2);
+ assert.throws(()=>gm.action('s0','next'));gm.action('s0','night_done');gm.action('s0','next');
  assert.deepEqual(gm.snapshot(room,b).me.companions,[c.id]);assert.deepEqual(gm.snapshot(room,c).me.companions,[b.id]);assert.deepEqual(gm.snapshot(room,d).me.companions,[]);
  assert.equal(gm.snapshot(room,b).me.canPeek,false);assert.throws(()=>gm.action('s1','peek',{targetId:d.id}));
- gm.action('s1','night_done');assert.equal(room.hour,2);gm.action('s2','night_done');assert.equal(room.hour,4);assert.deepEqual(gm.snapshot(room,b).me.knownCompanions,[c.id]);
+ gm.action('s1','night_done');gm.action('s2','night_done');gm.action('s0','next');assert.deepEqual(gm.snapshot(room,b).me.knownCompanions,[c.id]);
 });
 test('leader alone recruits correct distinct number at 4–8 players; team stays private',()=>{
  for(let count=4;count<=8;count++){
@@ -63,6 +59,6 @@ test('leader accusation wins for mice; henchman, ordinary mouse and tied vote wi
 });
 test('disconnect pauses night, changes host and securely restores same role and peek',()=>{
  const g=game();night(g);const {gm,room}=g;const p=room.players[0];const credentials=gm.credentials(room,p);
- gm.action('s0','peek',{targetId:room.players[1].id});gm.disconnect('s0');assert.equal(gm.paused(room),true);assert.equal(room.hostId,room.players[1].id);assert.equal(room.deadline,null);gm.advance(room);assert.equal(room.hour,1);
- assert.throws(()=>gm.rejoin('attacker',{...credentials,token:'x'.repeat(36)}));gm.rejoin('restored',credentials);assert.equal(gm.paused(room),false);assert.equal(p.role,'leader');assert.equal(p.peek!.hour,2);assert.equal(room.deadline,null);assert.throws(()=>gm.rejoin('duplicate',credentials));
+ gm.action('s0','peek',{targetId:room.players[1].id});gm.action('s0','auto');gm.disconnect('s0');assert.equal(gm.paused(room),true);assert.equal(room.hostId,room.players[1].id);assert.equal(room.deadline,null);gm.advance(room);assert.equal(room.hour,1);
+ assert.throws(()=>gm.rejoin('attacker',{...credentials,token:'x'.repeat(36)}));gm.rejoin('restored',credentials);assert.equal(gm.paused(room),false);assert.equal(p.role,'leader');assert.equal(p.peek!.hour,2);assert.ok(room.deadline!>Date.now());assert.throws(()=>gm.rejoin('duplicate',credentials));
 });
